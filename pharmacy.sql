@@ -366,3 +366,39 @@ WHERE (productName = "Extra strong patches of Partex" AND idProduct <> 0);
 /* Question 6 */
 DELETE FROM product WHERE (productName = "Coldinex" AND idProduct <> 0);
 
+/*My trigger*/
+
+DELIMITER //
+
+CREATE TRIGGER checkSurcharge
+BEFORE INSERT ON invoice
+FOR EACH ROW
+
+BEGIN
+
+IF NEW.surcharge < 0 THEN
+SET NEW.surcharge = 0;
+ELSEIF NEW.surcharge > NEW.TotalPrice THEN
+SET NEW.surcharge = NEW.TotalPrice;
+END IF;
+
+END; //
+
+DELIMITER ;
+
+/*My transaction*/
+
+START TRANSACTION;
+
+SELECT @idInsurance := MAX(idInsurance) + 1
+FROM insurance;
+
+INSERT INTO insurance 
+values(@idInsurance,"Alfa Insurance");
+
+INSERT INTO product_has_insurance
+VALUES(11,20100107,NULL,3,@idInsurance);
+
+/* COMMIT; */
+
+ROLLBACK;
