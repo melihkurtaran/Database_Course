@@ -289,3 +289,80 @@ INSERT INTO prescription_has_product values(11,36,5,1),(12,0,8,3),(13,15,8,3),(1
 INSERT INTO producer_has_product values(1,20110101,2,3),(2,20051212,5,1),(3,20171221,5,3),(4,19990105,2,3),(5,20050709,1,1);
 INSERT INTO producer_has_product values(6,20090903,1,4),(7,20060613,1,2),(8,20110107,1,5),(9,20190127,2,1),(10,20101224,5,2);
 
+DROP VIEW product_and_itsinsurance;
+DROP VIEW customer_has_drug;
+DROP VIEW customer_purchased_medicine;
+DROP VIEW physician_prescribed_hypertension;
+DROP VIEW physician_prescribed_hypertension_with_amount;
+
+/* Question 1 */
+CREATE VIEW customer_has_drug AS SELECT customer.Name, customer.Surname, prescription_has_product.amount, prescription.date FROM ((((prescription
+INNER JOIN prescription_has_product ON prescription.idPrescription = prescription_has_product.idPrescription_has_Product)
+INNER JOIN customer ON customer.idcustomer = prescription.customer_idcustomer))
+INNER JOIN product ON prescription_has_product.Product_idProduct = product.idProduct)
+INNER JOIN type ON type.idType = product.Type_idType
+WHERE type.typeName = "drug";
+
+SELECT count(*) as "How many drugs did John Smith receive on a prescription?"
+	FROM customer_has_drug
+    WHERE name="John" AND surname="Smith";
+    
+    
+/* Question 2 */
+CREATE VIEW physician_prescribed_hypertension AS SELECT physician.Name, physician.Surname,
+ product.productName, product.disease FROM ((((physician
+INNER JOIN prescription ON physician.idPhysician = prescription.Physician_idPhysician)
+INNER JOIN prescription_has_product ON prescription.idPrescription = prescription_has_product.idPrescription_has_Product))
+INNER JOIN product ON product.idProduct = prescription_has_product.Product_idProduct)
+WHERE disease = "hypertension";
+
+CREATE VIEW physician_prescribed_hypertension_with_amount AS SELECT DISTINCT Name, Surname ,(
+	SELECT COUNT(*)
+		FROM physician_prescribed_hypertension
+        WHERE Name = table_alias.Name AND
+			Surname = table_alias.Surname
+) AS amount
+FROM physician_prescribed_hypertension AS table_alias;
+
+SELECT * 
+FROM physician_prescribed_hypertension_with_amount;
+
+SELECT * 
+FROM physician_prescribed_hypertension_with_amount
+WHERE  amount = ( SELECT MAX(amount)
+					FROM physician_prescribed_hypertension_with_amount);
+
+
+/* Question 3 */
+CREATE VIEW product_and_itsInsurance AS SELECT product.productName, insurance.type  FROM ((product
+LEFT JOIN product_has_insurance ON product.idProduct = product_has_insurance.Product_idProduct)
+LEFT JOIN insurance ON insurance.idInsurance = product_has_insurance.Insurance_idInsurance);
+
+SELECT productName, type FROM product_and_itsInsurance WHERE type IS NOT NULL;
+
+
+/* Question 4 */
+CREATE VIEW customer_purchased_medicine AS SELECT customer.Name, customer.Surname, prescription_has_product.amount FROM ((((prescription
+INNER JOIN prescription_has_product ON prescription.idPrescription = prescription_has_product.idPrescription_has_Product)
+INNER JOIN customer ON customer.idcustomer = prescription.customer_idcustomer))
+INNER JOIN product ON prescription_has_product.Product_idProduct = product.idProduct)
+INNER JOIN type ON type.idType = product.Type_idType
+WHERE type.typeName = "medicine";
+
+SELECT * 
+FROM customer_purchased_medicine;
+
+SELECT * 
+FROM customer_purchased_medicine
+WHERE  amount = ( SELECT MAX(amount)
+					FROM customer_purchased_medicine);
+            
+            
+/* Question 5 */
+UPDATE product SET productName = "Partex Extra Hard Patches"
+WHERE (productName = "Extra strong patches of Partex" AND idProduct <> 0);
+
+
+/* Question 6 */
+DELETE FROM product WHERE (productName = "Coldinex" AND idProduct <> 0);
+
